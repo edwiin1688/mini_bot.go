@@ -3,21 +3,36 @@ package providers
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
 type OpenAICompatProvider struct {
 	BaseURL string
 	APIKey  string
+	client  *http.Client
 }
 
 func NewOpenAICompatProvider(baseURL, apiKey string) *OpenAICompatProvider {
+	tlsConfig := &tls.Config{
+		MinVersion: tls.VersionTLS12,
+	}
+
+	transport := &http.Transport{
+		TLSClientConfig: tlsConfig,
+	}
+
 	return &OpenAICompatProvider{
 		BaseURL: baseURL,
 		APIKey:  apiKey,
+		client: &http.Client{
+			Transport: transport,
+			Timeout:   60 * time.Second,
+		},
 	}
 }
 
@@ -71,7 +86,7 @@ func (p *OpenAICompatProvider) Chat(
 		req.Header.Set("Authorization", "Bearer "+p.APIKey)
 	}
 
-	client := &http.Client{}
+	client := p.client
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("http request failed: %w", err)

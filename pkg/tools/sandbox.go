@@ -2,7 +2,9 @@ package tools
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -16,14 +18,32 @@ func NewSandbox(workspacePath string) (*Sandbox, error) {
 	if err != nil {
 		return nil, err
 	}
+	absPath = filepath.Clean(absPath)
+
+	if err := os.MkdirAll(absPath, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create workspace directory: %w", err)
+	}
+
 	return &Sandbox{
-		Workspace: filepath.Clean(absPath),
+		Workspace: absPath,
 	}, nil
+}
+
+func (s *Sandbox) isSubPath(path string) bool {
+	checkPath := path
+	for {
+		if checkPath == s.Workspace {
+			return true
+		}
+		if checkPath == filepath.Dir(checkPath) {
+			return false
+		}
+		checkPath = filepath.Dir(checkPath)
+	}
 }
 
 // CheckPath resolves input path to absolute and ensures it's inside Workspace.
 func (s *Sandbox) CheckPath(inputPath string) (string, error) {
-	// Support absolute path resolving relative to workspace if given as relative
 	var targetPath string
 	if filepath.IsAbs(inputPath) {
 		targetPath = inputPath
@@ -31,16 +51,27 @@ func (s *Sandbox) CheckPath(inputPath string) (string, error) {
 		targetPath = filepath.Join(s.Workspace, inputPath)
 	}
 
-	absTargetPath, err := filepath.Abs(targetPath)
+	absTargetPath, err := filepath.EvalSymlinks(targetPath)
 	if err != nil {
-		return "", fmt.Errorf("invalid path: %v", err)
+		if !os.IsNotExist(err) {
+			return "", fmt.Errorf("invalid path: %v", err)
+		}
+		absTargetPath = filepath.Clean(targetPath)
+	} else {
+		absTargetPath = filepath.Clean(absTargetPath)
 	}
-	absTargetPath = filepath.Clean(absTargetPath)
 
-	// Ensure prefix matches
-	// Using strings.HasPrefix is okay, but `filepath.Clean` might leave trailing slash issue.
-	// Best approach: ensure absTargetPath equals Workspace OR absTargetPath starts with Workspace + separator
-	if !strings.HasPrefix(absTargetPath, s.Workspace) {
+	workspace := s.Workspace
+	if runtime.GOOS == "windows" {
+		workspace = strings.ToLower(workspace)
+		absTargetPath = strings.ToLower(absTargetPath)
+	}
+
+	if absTargetPath != workspace && !strings.HasPrefix(absTargetPath, workspace+string(filepath.Separator)) {
+		return "", fmt.Errorf("path escapes workspace bounds: %s", inputPath)
+	}
+
+	if !s.isSubPath(absTargetPath) {
 		return "", fmt.Errorf("path escapes workspace bounds: %s", inputPath)
 	}
 

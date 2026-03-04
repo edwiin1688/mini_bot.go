@@ -40,10 +40,10 @@ if !strings.HasPrefix(absTargetPath, s.Workspace) {
 ```
 
 **修復任務**:
-- [ ] 使用 `strings.HasPrefix` 改為目錄完全匹配驗證
-- [ ] 在路徑檢查前解析所有 symlink
-- [ ] 新增 Windows 路徑大小寫不敏感比對
-- [ ] 驗證最終路徑確實在允許目錄內 (使用 `filepath.Dir` 逐步驗證父目錄)
+- [x] 使用 `strings.HasPrefix` 改為目錄完全匹配驗證
+- [x] 在路徑檢查前解析所有 symlink
+- [x] 新增 Windows 路徑大小寫不敏感比對
+- [x] 驗證最終路徑確實在允許目錄內 (使用 `filepath.Dir` 逐步驗證父目錄)
 
 **參考實作位置**: `pkg/tools/sandbox.go:40-46`
 
@@ -89,9 +89,9 @@ if !strings.HasPrefix(absTargetPath, s.Workspace) {
 **問題**: HTTP 請求未驗證 SSL 憑證，無 TLS 版本控制。
 
 **修復任務**:
-- [ ] 自訂 HTTP Client，強制 TLS 1.2+
-- [ ] 啟用憑證驗證 (移除未驗證的 Transport)
-- [ ] 新增連線逾時保護
+- [x] 自訂 HTTP Client，強制 TLS 1.2+
+- [x] 啟用憑證驗證 (移除未驗證的 Transport)
+- [x] 新增連線逾時保護
 - [ ] 記錄 TLS 版本以供稽核
 
 **參考實作位置**: `pkg/providers/openai_compat.go:74`
@@ -129,9 +129,9 @@ if !strings.HasPrefix(absTargetPath, s.Workspace) {
 **問題**: 日誌可能包含敏感資訊。
 
 **修復任務**:
-- [ ] 實作敏感資訊過濾 (API keys, tokens)
-- [ ] 新增日誌級別控制
-- [ ] 確保錯誤訊息不暴露內部實作細節
+- [x] 實作敏感資訊過濾 (API keys, tokens)
+- [x] 新增日誌級別控制
+- [x] 確保錯誤訊息不暴露內部實作細節
 
 ---
 
